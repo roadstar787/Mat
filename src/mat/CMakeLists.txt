@@ -6,7 +6,7 @@
 ###################################################
 
 # Matライブラリの作成
-add_library(mat mat.cpp)
+add_library(mat mat.cpp randstream.cpp)
 
 # Eigenへのリンク
 target_link_libraries(mat PRIVATE Eigen3::eigen)

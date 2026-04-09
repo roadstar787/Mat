@@ -29,6 +29,10 @@ Matは、C++の数値計算ライブラリEigen（バージョン3.3.9）を基�
 - **移動平均**: `movmean()`
 - **逆正接**: `atan2()`
 
+### 乱数生成
+- **一様乱数**: `rand()`, `randn()`
+- **乱数の種設定**: `setRandomSeed()`
+
 ## インストール
 
 ### 依存関係
@@ -114,6 +118,17 @@ Mat meanMat = Mat::movmean(inputMat, 5); // 移動平均
 Mat atanMat = Mat::atan2(Y, X);        // 4象限逆正接
 ```
 
+### 乱数生成
+
+```cpp
+Mat randomMat = rand(3, 4);           // 3x4の一様乱数 [0,1)
+Mat randomMat = rand(2, 3, -1.0, 1.0); // 2x3の範囲指定一様乱数 [-1.0,1.0)
+Mat normalMat = randn(3, 3);           // 3x3の正規乱数 N(0,1)
+
+setRandomSeed(12345);                  // 乱数の種を設定
+unsigned int seed = getRandomSeed();   // 現在の乱数の種を取得
+```
+
 ### 表示
 
 ```cpp
@@ -157,6 +172,39 @@ int main() {
 }
 ```
 
+### 乱数生成の使用例
+
+```cpp
+#include "mat.h"
+
+int main() {
+    // 一様乱数の生成
+    Mat uniformRand = rand(3, 4);
+    uniformRand.disp("Uniform Random Matrix [0,1)");
+    
+    // 指定範囲の一様乱数の生成
+    Mat rangeRand = rand(2, 3, -5.0, 5.0);
+    rangeRand.disp("Random Matrix [-5.0,5.0)");
+    
+    // 正規乱数の生成
+    Mat normalRand = randn(5, 1);
+    normalRand.disp("Normal Random Vector N(0,1)");
+    
+    // 乱数の種を設定して再現性を確保
+    setRandomSeed(42);
+    Mat reproducible1 = rand(2, 2);
+    
+    setRandomSeed(42);
+    Mat reproducible2 = rand(2, 2);
+    
+    // 同じ乱数列が生成されることを確認
+    reproducible1.disp("Reproducible 1");
+    reproducible2.disp("Reproducible 2");
+    
+    return 0;
+}
+```
+
 ### 高度な使用例
 
 ```cpp
@@ -183,6 +231,11 @@ int main() {
     std::cout << "Submatrix:" << std::endl;
     sub.disp();
     
+    // 乱数を使った行列の作成
+    Mat randomMatrix = rand(3, 3);
+    std::cout << "Random matrix:" << std::endl;
+    randomMatrix.disp();
+    
     return 0;
 }
 ```
@@ -199,6 +252,14 @@ ctest
 [ライセンス情報]
 
 ## 更新履歴
+
+### v0.3.0 (2026-04-09)
+- 乱数生成機能を追加
+- RandStreamクラスを実装
+- 一様乱数と正規乱数の生成をサポート
+- 乱数の種の管理機能を追加
+- クロスプラットフォーム対応の乱数生成を実装
+- 乱数生成のテストケースを追加
 
 ### v0.2.0 (2026-04-09)
 - 転置行列メソッドを追加

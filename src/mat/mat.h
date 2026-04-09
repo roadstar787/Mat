@@ -11,6 +11,13 @@
 #include <algorithm>
 #include <Eigen/Dense>
 
+// 乱数生成のための前方宣言
+Mat rand(int rows, int cols);
+Mat rand(int rows, int cols, double min, double max);
+Mat randn(int rows, int cols);
+void setRandomSeed(unsigned int seed);
+unsigned int getRandomSeed();
+
 class Mat {
 public:
     /**
