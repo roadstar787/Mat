@@ -1,167 +1,115 @@
+/**
+ * @brief 乱数生成ストリームの実装
+ * 
+ * このファイルでは、一様分布と正規分布の乱数生成を実装します。
+ * C++11の乱数ライブラリを利用して、高品質な乱数を生成します。
+ */
+
 #include "randstream.h"
+#include <random>
 #include <chrono>
+#include <algorithm>
 
-// グローバルな乱数ストリームインスタンスの定義
-RandStream globalRandomStream;
-
-/**
- * @brief デフォルトコンストラクタ
- * 
- * 現在時刻をseedとして使用します。
- */
-RandStream::RandStream() {
-    // 現在時刻をseedとして使用
-    unsigned int seed = static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count());
-    generator.seed(seed);
-}
-
-/**
- * @brief seedを指定するコンストラクタ
- * @param seed 乱数の初期シード値
- * 
- * 指定されたseedで乱数生成器を初期化します。
- */
-RandStream::RandStream(unsigned int seed) : generator(seed) {
-    // コンストラクタでseedを設定
-}
-
-/**
- * @brief 一様乱数を生成
- * @param rows 行数
- * @param cols 列数
- * @return 生成された乱数行列（値の範囲は[0,1)）
- * 
- * 0以上1未満の一様乱数を生成します。
- */
-Mat RandStream::uniform(int rows, int cols) {
-    return generate(rows, cols, uniform_dist);
-}
-
-/**
- * @brief 一様乱数を生成（指定範囲）
- * @param rows 行数
- * @param cols 列数
- * @param min 最小値（含む）
- * @param max 最大値（含まない）
- * @return 生成された乱数行列（値の範囲は[min,max)）
- * 
- * 指定された範囲の一様乱数を生成します。
- */
-Mat RandStream::uniform(int rows, int cols, double min, double max) {
-    std::uniform_real_distribution<double> dist(min, max);
-    return generate(rows, cols, dist);
-}
-
-/**
- * @brief 正規乱数を生成
- * @param rows 行数
- * @param cols 列数
- * @return 生成された乱数行列（平均0, 標準偏差1の正規分布）
- * 
- * 平均0、標準偏差1の正規乱数を生成します。
- */
-Mat RandStream::normal(int rows, int cols) {
-    return generate(rows, cols, normal_dist);
-}
-
-/**
- * @brief seedを設定
- * @param seed 新しいシード値
- * 
- * 乱数生成器のseedを設定し、乱数列をリセットします。
- */
-void RandStream::setSeed(unsigned int seed) {
-    generator.seed(seed);
-}
-
-/**
- * @brief 現在のseedを取得
- * @return 現在のシード値
- */
-unsigned int RandStream::getSeed() const {
-    // mt19937には直接seedを取得するメソッドがないため、
-    // 現在の状態から推測される値を返す（厳密ではないが、設定したseedを復元可能）
-    return generator.state();
-}
-
-/**
- * @brief 乱数を生成してEigen::MatrixXdに格納
- * @param rows 行数
- * @param cols 列数
- * @param dist 分布オブジェクト
- * @return 生成された乱数行列
- * 
- * テンプレート関数で、任意の分布オブジェクトを使用して乱数を生成します。
- */
-template<typename Distribution>
-Mat RandStream::generate(int rows, int cols, Distribution& dist) {
-    Mat result(rows, cols);
+namespace {
+    // グローバルな乱数生成器
+    std::mt19937 global_rng;
     
+    // 乱数生成器の初期化フラグ
+    bool rng_initialized = false;
+    
+    // 乱数生成器を初期化
+    void initialize_rng() {
+        if (!rng_initialized) {
+            // 現在の時刻をシードとして使用
+            global_rng.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            rng_initialized = true;
+        }
+    }
+}
+
+/**
+ * @brief 一様分布乱数を生成
+ * @param rows 行数
+ * @param cols 列数
+ * @param min 最小値（デフォルト: 0.0）
+ * @param max 最大値（デフォルト: 1.0）
+ * @return 乱数行列
+ */
+Mat rand(int rows, int cols, double min, double max) {
+    initialize_rng();
+    
+    // 一様分布を作成
+    std::uniform_real_distribution<double> dist(min, max);
+    
+    // 乱数行列を作成
+    Mat result(rows, cols);
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            result(i, j) = dist(generator);
+            result(i, j) = dist(global_rng);
         }
     }
     
     return result;
 }
 
-// グローバル関数の実装
-
 /**
- * @brief 一様乱数を生成（グローバル関数）
+ * @brief 一様分布乱数を生成（デフォルト範囲）
  * @param rows 行数
  * @param cols 列数
- * @return 生成された乱数行列（値の範囲は[0,1)）
- * 
- * グローバルなRandStreamインスタンスを使用して一様乱数を生成します。
+ * @return 乱数行列（範囲: [0, 1)）
  */
 Mat rand(int rows, int cols) {
-    return globalRandomStream.uniform(rows, cols);
+    return rand(rows, cols, 0.0, 1.0);
 }
 
 /**
- * @brief 一様乱数を生成（指定範囲、グローバル関数）
+ * @brief 正規分布乱数を生成
  * @param rows 行数
  * @param cols 列数
- * @param min 最小値（含む）
- * @param max 最大値（含まない）
- * @return 生成された乱数行列（値の範囲は[min,max)）
- * 
- * グローバルなRandStreamインスタンスを使用して指定範囲の一様乱数を生成します。
+ * @param mean 平均値（デフォルト: 0.0）
+ * @param std_dev 標準偏差（デフォルト: 1.0）
+ * @return 乱数行列
  */
-Mat rand(int rows, int cols, double min, double max) {
-    return globalRandomStream.uniform(rows, cols, min, max);
+Mat randn(int rows, int cols, double mean, double std_dev) {
+    initialize_rng();
+    
+    // 正規分布を作成
+    std::normal_distribution<double> dist(mean, std_dev);
+    
+    // 乱数行列を作成
+    Mat result(rows, cols);
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            result(i, j) = dist(global_rng);
+        }
+    }
+    
+    return result;
 }
 
 /**
- * @brief 正規乱数を生成（グローバル関数）
+ * @brief 正規分布乱数を生成（デフォルトパラメータ）
  * @param rows 行数
  * @param cols 列数
- * @return 生成された乱数行列（平均0, 標準偏差1の正規分布）
- * 
- * グローバルなRandStreamインスタンスを使用して正規乱数を生成します。
+ * @return 乱数行列（平均: 0, 標準偏差: 1）
  */
 Mat randn(int rows, int cols) {
-    return globalRandomStream.normal(rows, cols);
+    return randn(rows, cols, 0.0, 1.0);
 }
 
 /**
- * @brief グローバルな乱数ストリームのseedを設定
- * @param seed 新しいシード値
- * 
- * グローバルなRandStreamインスタンスのseedを設定します。
+ * @brief 乱数シードを設定
+ * @param seed シード値
  */
 void setRandomSeed(unsigned int seed) {
-    globalRandomStream.setSeed(seed);
+    global_rng.seed(seed);
+    rng_initialized = true;
 }
 
 /**
- * @brief グローバルな乱数ストリームのseedを取得
+ * @brief 現在の乱数シードを取得
  * @return 現在のシード値
- * 
- * グローバルなRandStreamインスタンスの現在のseedを返します。
  */
 unsigned int getRandomSeed() {
-    return globalRandomStream.getSeed();
+    return global_rng();
 }

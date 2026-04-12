@@ -1,36 +1,33 @@
-###################################################
-#
-# Lastmodified:
-#
-###################################################
-cmake_minimum_required(VERSION 4.0.0)
-project(test VERSION 0.1)
+# cmake_minimum_required(VERSION 3.10)
+project(MatTests CXX)
+
+# C++標準を設定
 set(CMAKE_CXX_STANDARD 11)
-message(STATUS "Build Tests for " ${PROJECT_NAME})
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# GoogleTestが見つかることを前提とする
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+# FetchContentモジュールの読み込み
+include(FetchContent)
 
-# テストソースファイル
-set(TEST_SOURCES
-    test_mat_linspace_range.cpp
-    test_mat_statistical.cpp
-    test_mat_vector_ops.cpp
-    test_mat_basic_ops.cpp
+# Google Test の取得設定（Git リポジトリから取得）
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.17.0
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest
 )
+FetchContent_MakeAvailable(googletest)
 
-# テスト実行可能ファイルを作成
-add_executable(runTests ${TEST_SOURCES})
+# ライブラリと実行ファイルの追加
+# add_library(mat STATIC
+#     ../src/mat/mat.h
+# )
 
-# 必要なライブラリにリンク
-target_link_libraries(runTests
-    PRIVATE
-        ${GTEST_BOTH_LIBRARIES}
-        pthread
-        mat  # 自身のライブラリ
-)
+# テストの追加
+add_executable(test_statistical test_mat_statistical_extended.cpp)
+target_link_libraries(test_statistical mat gtest_main)
+add_test(NAME test_statistical COMMAND test_statistical)
 
-# テストをCTestに追加
-include(GoogleTest)
-gtest_discover_tests(runTests)
+add_executable(test_advanced test_mat_advanced_functions.cpp)
+target_link_libraries(test_advanced mat gtest_main)
+add_test(NAME test_advanced COMMAND test_advanced)

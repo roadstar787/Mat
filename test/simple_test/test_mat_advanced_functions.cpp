@@ -213,23 +213,20 @@ TEST(MatLogicalIndexingTest, Find2dFunction) {
                      {3.0, 0.0, 4.0}};
     
     // 2次元インデックスで要素を検索
-    // C++11 では構造化バインディングが使用できないため、pair の要素を個別に取得
-    auto dims = Mat::find2d(condition);
-    Mat rowsMat = dims.first;   // 行インデックス行列
-    Mat colsMat = dims.second;  // 列インデックス行列
-
+    auto [rows, cols] = Mat::find2d(condition);
+    
     // 期待される行・列インデックス（1ベース）
     // 非ゼロ要素: (0,1), (1,0), (1,2)
-    EXPECT_EQ(rowsMat.rows(), 3);
-    EXPECT_EQ(colsMat.rows(), 3);
-
+    EXPECT_EQ(rows.rows(), 3);
+    EXPECT_EQ(cols.rows(), 3);
+    
     // 行インデックス
-    EXPECT_DOUBLE_EQ(rowsMat(0, 0), 1.0); // 0行目 -> 1
-    EXPECT_DOUBLE_EQ(rowsMat(1, 0), 2.0); // 1行目 -> 2
-    EXPECT_DOUBLE_EQ(rowsMat(2, 0), 2.0); // 1行目 -> 2
-
+    EXPECT_DOUBLE_EQ(rows(0, 0), 1.0); // 0行目 -> 1
+    EXPECT_DOUBLE_EQ(rows(1, 0), 2.0); // 1行目 -> 2
+    EXPECT_DOUBLE_EQ(rows(2, 0), 2.0); // 1行目 -> 2
+    
     // 列インデックス
-    EXPECT_DOUBLE_EQ(colsMat(0, 0), 2.0); // 1列目 -> 2
-    EXPECT_DOUBLE_EQ(colsMat(1, 0), 1.0); // 0列目 -> 1
-    EXPECT_DOUBLE_EQ(colsMat(2, 0), 3.0); // 2列目 -> 3
+    EXPECT_DOUBLE_EQ(cols(0, 0), 2.0); // 1列目 -> 2
+    EXPECT_DOUBLE_EQ(cols(1, 0), 1.0); // 0列目 -> 1
+    EXPECT_DOUBLE_EQ(cols(2, 0), 3.0); // 2列目 -> 3
 }

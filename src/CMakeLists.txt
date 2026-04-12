@@ -12,6 +12,5 @@ message(STATUS "Build " ${PROJECT_NAME})
 #
 # set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-add_subdirectory(externals)
 add_subdirectory(mat)
-add_subdirectory(test)
+# add_subdirectory(test)

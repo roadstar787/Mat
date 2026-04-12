@@ -10,7 +10,13 @@
 #include <cmath>
 #include <algorithm>
 #include <Eigen/Dense>
-#include <limits>
+
+// 乱数生成のための前方宣言
+Mat rand(int rows, int cols);
+Mat rand(int rows, int cols, double min, double max);
+Mat randn(int rows, int cols);
+void setRandomSeed(unsigned int seed);
+unsigned int getRandomSeed();
 
 class Mat {
 public:
@@ -124,7 +130,7 @@ public:
     double operator()(int r, int c) const { return data(r, c); }
 
     /**
-     * @brief 線形インデックスでの要素アクセス（非const版）
+     * @brief 線形インデックスでの要素アクセス
      * @param i 線形インデックス（0から始まる）
      * @return 指定位置の要素への参照
      * 
@@ -133,16 +139,6 @@ public:
      * 例：3x4行列の場合、インデックス0→(0,0)、1→(1,0)、2→(2,0)、3→(0,1)...
      */
     double& operator()(int i) { return data(i); } // 線形インデックス
-
-    /**
-     * @brief 線形インデックスでの要素取得（const版）
-     * @param i 線形インデックス（0から始まる）
-     * @return 指定位置の要素の値
-     * 
-     * constなMatオブジェクトから線形インデックスで要素を取得する場合に使用します。
-     * 値の変更はできません。
-     */
-    double operator()(int i) const { return data(i); } // 線形インデックス（const版）
 
     // --- 四則演算 (演算子オーバーロード) ---
 
@@ -466,6 +462,7 @@ public:
          }
          return result;
      }
+     };
 
      /**
       * @brief 平均値を計算（次元指定対応）
@@ -479,11 +476,9 @@ public:
          if (dim == -1) { // 全要素の平均
              return Mat({{data.mean()}});
          } else if (dim == 0) { // 行方向の平均（各列の平均）
-             Eigen::MatrixXd result = data.colwise().mean();
-             return Mat(result);
+             return Mat(1, cols(), data.colwise().mean());
          } else if (dim == 1) { // 列方向の平均（各行の平均）
-             Eigen::MatrixXd result = data.rowwise().mean();
-             return Mat(result);
+             return Mat(rows(), 1, data.rowwise().mean());
          } else {
              return Mat({{data.mean()}}); // デフォルトは全要素の平均
          }
@@ -499,29 +494,13 @@ public:
       */
      Mat std(int dim = -1) const {
          if (dim == -1) { // 全要素の標準偏差
-             double mean_val = data.mean();
-             double variance = (data.array() - mean_val).square().sum() / data.size();
-             return Mat({{std::sqrt(variance)}});
+             return Mat({{data.stddev()}});
          } else if (dim == 0) { // 行方向の標準偏差（各列の標準偏差）
-             Eigen::MatrixXd result(data.cols(), 1);
-             for (int j = 0; j < data.cols(); ++j) {
-                 double col_mean = data.col(j).mean();
-                 double variance = (data.col(j).array() - col_mean).square().sum() / data.rows();
-                 result(j, 0) = std::sqrt(variance);
-             }
-             return Mat(result.transpose());
+             return Mat(1, cols(), data.colwise().stddev());
          } else if (dim == 1) { // 列方向の標準偏差（各行の標準偏差）
-             Eigen::MatrixXd result(data.rows(), 1);
-             for (int i = 0; i < data.rows(); ++i) {
-                 double row_mean = data.row(i).mean();
-                 double variance = (data.row(i).array() - row_mean).square().sum() / data.cols();
-                 result(i, 0) = std::sqrt(variance);
-             }
-             return Mat(result);
+             return Mat(rows(), 1, data.rowwise().stddev());
          } else {
-             double mean_val = data.mean();
-             double variance = (data.array() - mean_val).square().sum() / data.size();
-             return Mat({{std::sqrt(variance)}}); // デフォルトは全要素の標準偏差
+             return Mat({{data.stddev()}}); // デフォルトは全要素の標準偏差
          }
      }
 
@@ -537,11 +516,9 @@ public:
          if (dim == -1) { // 全要素の合計
              return Mat({{data.sum()}});
          } else if (dim == 0) { // 行方向の合計（各列の合計）
-             Eigen::MatrixXd result = data.colwise().sum();
-             return Mat(result);
+             return Mat(1, cols(), data.colwise().sum());
          } else if (dim == 1) { // 列方向の合計（各行の合計）
-             Eigen::MatrixXd result = data.rowwise().sum();
-             return Mat(result);
+             return Mat(rows(), 1, data.rowwise().sum());
          } else {
              return Mat({{data.sum()}}); // デフォルトは全要素の合計
          }
@@ -559,17 +536,9 @@ public:
          if (dim == -1) { // 全要素の最大値
              return Mat({{data.maxCoeff()}});
          } else if (dim == 0) { // 行方向の最大値（各列の最大値）
-             Eigen::MatrixXd result(data.cols(), 1);
-             for (int j = 0; j < data.cols(); ++j) {
-                 result(j, 0) = data.col(j).maxCoeff();
-             }
-             return Mat(result.transpose());
+             return Mat(1, cols(), data.colwise().maxCoeff());
          } else if (dim == 1) { // 列方向の最大値（各行の最大値）
-             Eigen::MatrixXd result(data.rows(), 1);
-             for (int i = 0; i < data.rows(); ++i) {
-                 result(i, 0) = data.row(i).maxCoeff();
-             }
-             return Mat(result);
+             return Mat(rows(), 1, data.rowwise().maxCoeff());
          } else {
              return Mat({{data.maxCoeff()}}); // デフォルトは全要素の最大値
          }
@@ -587,17 +556,9 @@ public:
          if (dim == -1) { // 全要素の最小値
              return Mat({{data.minCoeff()}});
          } else if (dim == 0) { // 行方向の最小値（各列の最小値）
-             Eigen::MatrixXd result(data.cols(), 1);
-             for (int j = 0; j < data.cols(); ++j) {
-                 result(j, 0) = data.col(j).minCoeff();
-             }
-             return Mat(result.transpose());
+             return Mat(1, cols(), data.colwise().minCoeff());
          } else if (dim == 1) { // 列方向の最小値（各行の最小値）
-             Eigen::MatrixXd result(data.rows(), 1);
-             for (int i = 0; i < data.rows(); ++i) {
-                 result(i, 0) = data.row(i).minCoeff();
-             }
-             return Mat(result);
+             return Mat(rows(), 1, data.rowwise().minCoeff());
          } else {
              return Mat({{data.minCoeff()}}); // デフォルトは全要素の最小値
          }
@@ -661,17 +622,9 @@ public:
          if (dim == -1) { // 全要素の積
              return Mat({{data.prod()}});
          } else if (dim == 0) { // 行方向の積（各列の積）
-             Eigen::MatrixXd result(data.cols(), 1);
-             for (int j = 0; j < data.cols(); ++j) {
-                 result(j, 0) = data.col(j).prod();
-             }
-             return Mat(result.transpose());
+             return Mat(1, cols(), data.colwise().prod());
          } else if (dim == 1) { // 列方向の積（各行の積）
-             Eigen::MatrixXd result(data.rows(), 1);
-             for (int i = 0; i < data.rows(); ++i) {
-                 result(i, 0) = data.row(i).prod();
-             }
-             return Mat(result);
+             return Mat(rows(), 1, data.rowwise().prod());
          } else {
              return Mat({{data.prod()}}); // デフォルトは全要素の積
          }
@@ -696,21 +649,9 @@ public:
              }
              return Mat(cumsum);
          } else if (dim == 0) { // 行方向の累積和（各列の累積和）
-             Eigen::MatrixXd result = data;
-             for (int j = 0; j < data.cols(); ++j) {
-                 for (int i = 1; i < data.rows(); ++i) {
-                     result(i, j) += result(i-1, j);
-                 }
-             }
-             return Mat(result);
+             return Mat(data.colwise().cumsum());
          } else if (dim == 1) { // 列方向の累積和（各行の累積和）
-             Eigen::MatrixXd result = data;
-             for (int i = 0; i < data.rows(); ++i) {
-                 for (int j = 1; j < data.cols(); ++j) {
-                     result(i, j) += result(i, j-1);
-                 }
-             }
-             return Mat(result);
+             return Mat(data.rowwise().cumsum());
          } else {
              return cumsum(); // デフォルトは全要素の累積和
          }
@@ -735,21 +676,9 @@ public:
              }
              return Mat(cumprod);
          } else if (dim == 0) { // 行方向の累積積（各列の累積積）
-             Eigen::MatrixXd result = data;
-             for (int j = 0; j < data.cols(); ++j) {
-                 for (int i = 1; i < data.rows(); ++i) {
-                     result(i, j) *= result(i-1, j);
-                 }
-             }
-             return Mat(result);
+             return Mat(data.colwise().cumprod());
          } else if (dim == 1) { // 列方向の累積積（各行の累積積）
-             Eigen::MatrixXd result = data;
-             for (int i = 0; i < data.rows(); ++i) {
-                 for (int j = 1; j < data.cols(); ++j) {
-                     result(i, j) *= result(i, j-1);
-                 }
-             }
-             return Mat(result);
+             return Mat(data.rowwise().cumprod());
          } else {
              return cumprod(); // デフォルトは全要素の累積積
          }
@@ -768,10 +697,7 @@ public:
          if ((rows() == 1 || cols() == 1) && (b.rows() == 1 || b.cols() == 1)) {
              // 両方ともベクトルであることを確認
              if (numel() == b.numel()) {
-                 // 行列をベクトルとして扱うために、Eigen::Mapを使用
-                 Eigen::Map<const Eigen::VectorXd> vec1(data.data(), data.size());
-                 Eigen::Map<const Eigen::VectorXd> vec2(b.data.data(), b.data.size());
-                 return Mat({{vec1.dot(vec2)}});
+                 return Mat({{data.dot(b.data)}});
              }
          }
          // 条件を満たさない場合は0を返す（または例外を投げることも可能）
@@ -821,38 +747,19 @@ public:
 
      // === 追加のベクトル・行列関数 ===
 
-       // TODO: 行列への値の代入（<<演算子）の実装
-       // Eigenの<<演算子をラップする必要がある
-       // 現在はコメントアウト
-       /*
-       template<typename... Args>
-       Mat& operator<<(Args... args) {
-           // fold expressionを使用して各引数を処理
-           (void)std::initializer_list<int>{(data << args, 0)...};
-           return *this;
-       }
-       */
-       
-       // C++11準拠の<<演算子オーバーロード
-       template<typename T>
-       Mat& operator<<(const T& value) {
-           data << value;
-           return *this;
-       }
-
-      /**
-       * @brief 行列の跡（trace）を計算
-       * @return 跡の値（対角要素の和）
-       * 
-       * MATLABの trace(A) に相当します。
-       * 正方形行列のみで動作します。
-       */
-      double trace() const {
-          if (rows() != cols()) {
-              throw std::invalid_argument("Trace can only be computed for square matrices");
-          }
-          return data.trace();
-      }
+     /**
+      * @brief 行列の跡（trace）を計算
+      * @return 跡の値（対角要素の和）
+      * 
+      * MATLABの trace(A) に相当します。
+      * 正方形行列のみで動作します。
+      */
+     double trace() const {
+         if (rows() != cols()) {
+             throw std::invalid_argument("Trace can only be computed for square matrices");
+         }
+         return data.trace();
+     }
 
      /**
       * @brief ベクトルノルムを計算
@@ -892,8 +799,7 @@ public:
          if (newRows * newCols != numel()) {
              throw std::invalid_argument("Reshape dimensions must match total number of elements");
          }
-         Eigen::MatrixXd reshaped = data.reshaped<Eigen::RowMajor>(newRows, newCols);
-         return Mat(reshaped);
+         return Mat(data.reshaped<Eigen::RowMajor>(newRows, newCols));
      }
 
      /**
@@ -903,8 +809,7 @@ public:
       * MATLABの flipud(A) に相当します。
       */
      Mat flipud() const {
-         Eigen::MatrixXd reversed = data.reverse();
-         return Mat(reversed);
+         return Mat(data.reverse());
      }
 
      /**
@@ -914,8 +819,7 @@ public:
       * MATLABの fliplr(A) に相当します。
       */
      Mat fliplr() const {
-         Eigen::MatrixXd reversed = data.rowwise().reverse();
-         return Mat(reversed);
+         return Mat(data.rowwise().reverse());
      }
 
      /**
@@ -947,7 +851,7 @@ public:
          Mat result(rows() * m, cols() * n);
          for (int i = 0; i < m; ++i) {
              for (int j = 0; j < n; ++j) {
-                 result.data.block(i * rows(), j * cols(), rows(), cols()) = data;
+                 result.block(i * rows(), j * cols(), rows(), cols()) = data;
              }
          }
          return result;
@@ -973,7 +877,7 @@ public:
          int currentRow = 0, currentCol = 0;
          
          for (const auto& mat : matrices) {
-             result.data.block(currentRow, currentCol, mat.rows(), mat.cols()) = mat.data;
+             result.block(currentRow, currentCol, mat.rows(), mat.cols()) = mat.data;
              currentRow += mat.rows();
              currentCol += mat.cols();
          }
@@ -1138,10 +1042,3 @@ public:
          return {rows, cols};
      }
 };
-
-// 乱数生成のための前方宣言と実装
-Mat rand(int rows, int cols);
-Mat rand(int rows, int cols, double min, double max);
-Mat randn(int rows, int cols);
-void setRandomSeed(unsigned int seed);
-unsigned int getRandomSeed();
