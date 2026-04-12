@@ -405,8 +405,223 @@ public:
      * m.disp("Matrix A"); // "Matrix A ="と共に行列を表示
      * @endcode
      */
-    void disp(const std::string& label = "") const {
-        if (!label.empty()) std::cout << label << " =" << std::endl;
-        std::cout << data << std::endl << std::endl;
-    }
-};
+     void disp(const std::string& label = "") const {
+         if (!label.empty()) std::cout << label << " =" << std::endl;
+         std::cout << data << std::endl << std::endl;
+     }
+
+     /**
+      * @brief 線形スペースを生成（ベクトル）
+      * @param start 開始値
+      * @param end 終了値
+      * @param n 生成する要素数
+      * @return startからendまで均等に分割されたn要素の行ベクトル
+      * 
+      * MATLABの linspace(start, end, n) に相当します。
+      * nが1以下の場合は空のベクトルを返します。
+      */
+     static Mat linspace(double start, double end, int n) {
+         if (n <= 0) return Mat(1, 0);
+         if (n == 1) return Mat({{start}});
+         
+         Mat result(1, n);
+         double step = (end - start) / (n - 1);
+         for (int i = 0; i < n; ++i) {
+             result(0, i) = start + i * step;
+         }
+         return result;
+     }
+
+     /**
+      * @brief ステップサイズを指定して範囲を生成（ベクトル）
+      * @param start 開始値
+      * @param step ステップサイズ
+      * @param end 終了値（この値を含まないか、含むかはステップの方向による）
+      * @return startからstepずつ増加させた要素の行ベクトル
+      * 
+      * MATLABの start:step:end に相当します。
+      * stepが0の場合は空のベクトルを返します。
+      */
+     static Mat range(double start, double step, double end) {
+         if (step == 0.0) return Mat(1, 0);
+         
+         std::vector<double> values;
+         if (step > 0) {
+             for (double val = start; val <= end; val += step) {
+                 values.push_back(val);
+             }
+         } else {
+             for (double val = start; val >= end; val += step) {
+                 values.push_back(val);
+             }
+         }
+         
+         Mat result(1, static_cast<int>(values.size()));
+         for (size_t i = 0; i < values.size(); ++i) {
+             result(0, static_cast<int>(i)) = values[i];
+         }
+         return result;
+     }
+     };
+
+     /**
+      * @brief 平均値を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での平均値（ベクトルまたはスカラー）
+      * 
+      * MATLABの mean(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の平均を返します。
+      */
+     Mat mean(int dim = -1) const {
+         if (dim == -1) { // 全要素の平均
+             return Mat({{data.mean()}});
+         } else if (dim == 0) { // 行方向の平均（各列の平均）
+             return Mat(1, cols(), data.colwise().mean());
+         } else if (dim == 1) { // 列方向の平均（各行の平均）
+             return Mat(rows(), 1, data.rowwise().mean());
+         } else {
+             return Mat({{data.mean()}}); // デフォルトは全要素の平均
+         }
+     }
+
+     /**
+      * @brief 標準偏差を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での標準偏差（ベクトルまたはスカラー）
+      * 
+      * MATLABの std(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の標準偏差を返します。
+      */
+     Mat std(int dim = -1) const {
+         if (dim == -1) { // 全要素の標準偏差
+             return Mat({{data.stddev()}});
+         } else if (dim == 0) { // 行方向の標準偏差（各列の標準偏差）
+             return Mat(1, cols(), data.colwise().stddev());
+         } else if (dim == 1) { // 列方向の標準偏差（各行の標準偏差）
+             return Mat(rows(), 1, data.rowwise().stddev());
+         } else {
+             return Mat({{data.stddev()}}); // デフォルトは全要素の標準偏差
+         }
+     }
+
+     /**
+      * @brief 合計を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での合計（ベクトルまたはスカラー）
+      * 
+      * MATLABの sum(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の合計を返します。
+      */
+     Mat sum(int dim = -1) const {
+         if (dim == -1) { // 全要素の合計
+             return Mat({{data.sum()}});
+         } else if (dim == 0) { // 行方向の合計（各列の合計）
+             return Mat(1, cols(), data.colwise().sum());
+         } else if (dim == 1) { // 列方向の合計（各行の合計）
+             return Mat(rows(), 1, data.rowwise().sum());
+         } else {
+             return Mat({{data.sum()}}); // デフォルトは全要素の合計
+         }
+     }
+
+     /**
+      * @brief 最大値を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での最大値（ベクトルまたはスカラー）
+      * 
+      * MATLABの max(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の最大値を返します。
+      */
+     Mat max(int dim = -1) const {
+         if (dim == -1) { // 全要素の最大値
+             return Mat({{data.maxCoeff()}});
+         } else if (dim == 0) { // 行方向の最大値（各列の最大値）
+             return Mat(1, cols(), data.colwise().maxCoeff());
+         } else if (dim == 1) { // 列方向の最大値（各行の最大値）
+             return Mat(rows(), 1, data.rowwise().maxCoeff());
+         } else {
+             return Mat({{data.maxCoeff()}}); // デフォルトは全要素の最大値
+         }
+     }
+
+     /**
+      * @brief 最小値を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での最小値（ベクトルまたはスカラー）
+      * 
+      * MATLABの min(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の最小値を返します。
+      */
+     Mat min(int dim = -1) const {
+         if (dim == -1) { // 全要素の最小値
+             return Mat({{data.minCoeff()}});
+         } else if (dim == 0) { // 行方向の最小値（各列の最小値）
+             return Mat(1, cols(), data.colwise().minCoeff());
+         } else if (dim == 1) { // 列方向の最小値（各行の最小値）
+             return Mat(rows(), 1, data.rowwise().minCoeff());
+         } else {
+             return Mat({{data.minCoeff()}}); // デフォルトは全要素の最小値
+         }
+     }
+
+     /**
+      * @brief 2つのベクトルの内積（ドット積）を計算
+      * @param b 内積を計算するベクトル
+      * @return 内積の結果（スカラー）
+      * 
+      * MATLABの dot(A, B) に相当します。
+      * 両方ともベクトル（1行または1列）である必要があります。
+      * 次元が一致している必要があります。
+      */
+     Mat dot(const Mat& b) const {
+         if ((rows() == 1 || cols() == 1) && (b.rows() == 1 || b.cols() == 1)) {
+             // 両方ともベクトルであることを確認
+             if (numel() == b.numel()) {
+                 return Mat({{data.dot(b.data)}});
+             }
+         }
+         // 条件を満たさない場合は0を返す（または例外を投げることも可能）
+         return Mat({{0.0}});
+     }
+
+     /**
+      * @brief 2つの3次元ベクトルの外積（クロス積）を計算
+      * @param b 外積を計算するベクトル
+      * @return 外積の結果（3次元ベクトル）
+      * 
+      * MATLABの cross(A, B) に相当します。
+      * 両方とも3次元ベクトルである必要があります。
+      */
+     Mat cross(const Mat& b) const {
+         if ((rows() == 3 && cols() == 1) || (rows() == 1 && cols() == 3)) {
+             if ((b.rows() == 3 && b.cols() == 1) || (b.rows() == 1 && b.cols() == 3)) {
+                 // 両方とも3次元ベクトルであることを確認
+                 Eigen::Vector3d a_vec, b_vec;
+                 
+                 // 自身のベクトルを取得
+                 if (rows() == 3) {
+                     a_vec << data(0, 0), data(1, 0), data(2, 0);
+                 } else {
+                     a_vec << data(0, 0), data(0, 1), data(0, 2);
+                 }
+                 
+                 // 引数のベクトルを取得
+                 if (b.rows() == 3) {
+                     b_vec << b.data(0, 0), b.data(1, 0), b.data(2, 0);
+                 } else {
+                     b_vec << b.data(0, 0), b.data(0, 1), b.data(0, 2);
+                 }
+                 
+                 // 外積を計算
+                 Eigen::Vector3d result_vec = a_vec.cross(b_vec);
+                 
+                 // 結果をベクトル形式で返す（列ベクトルとして）
+                 Mat result(3, 1);
+                 result << result_vec(0), result_vec(1), result_vec(2);
+                 return result;
+             }
+         }
+         // 条件を満たさない場合はゼロベクトルを返す
+         return Mat::zeros(3, 1);
+     }
+ };
