@@ -565,6 +565,126 @@ public:
      }
 
      /**
+      * @brief 中央値を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での中央値（ベクトルまたはスカラー）
+      * 
+      * MATLABの median(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の中央値を返します。
+      */
+     Mat median(int dim = -1) const {
+         if (dim == -1) { // 全要素の中央値
+             Eigen::VectorXd flat = data;
+             std::sort(flat.data(), flat.data() + flat.size());
+             size_t n = flat.size();
+             if (n == 0) return Mat({{0.0}});
+             if (n % 2 == 0) {
+                 return Mat({{(flat(n/2 - 1) + flat(n/2)) / 2.0}});
+             } else {
+                 return Mat({{flat(n/2)}});
+             }
+         } else if (dim == 0) { // 行方向の中央値（各列の中央値）
+             Mat result(1, cols());
+             for (int j = 0; j < cols(); ++j) {
+                 Eigen::VectorXd col = data.col(j);
+                 std::sort(col.data(), col.data() + col.size());
+                 size_t n = col.size();
+                 if (n == 0) result(0, j) = 0.0;
+                 else if (n % 2 == 0) result(0, j) = (col(n/2 - 1) + col(n/2)) / 2.0;
+                 else result(0, j) = col(n/2);
+             }
+             return result;
+         } else if (dim == 1) { // 列方向の中央値（各行の中央値）
+             Mat result(rows(), 1);
+             for (int i = 0; i < rows(); ++i) {
+                 Eigen::VectorXd row = data.row(i);
+                 std::sort(row.data(), row.data() + row.size());
+                 size_t n = row.size();
+                 if (n == 0) result(i, 0) = 0.0;
+                 else if (n % 2 == 0) result(i, 0) = (row(n/2 - 1) + row(n/2)) / 2.0;
+                 else result(i, 0) = row(n/2);
+             }
+             return result;
+         } else {
+             return median(); // デフォルトは全要素の中央値
+         }
+     }
+
+     /**
+      * @brief 積を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での積（ベクトルまたはスカラー）
+      * 
+      * MATLABの prod(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の積を返します。
+      */
+     Mat prod(int dim = -1) const {
+         if (dim == -1) { // 全要素の積
+             return Mat({{data.prod()}});
+         } else if (dim == 0) { // 行方向の積（各列の積）
+             return Mat(1, cols(), data.colwise().prod());
+         } else if (dim == 1) { // 列方向の積（各行の積）
+             return Mat(rows(), 1, data.rowwise().prod());
+         } else {
+             return Mat({{data.prod()}}); // デフォルトは全要素の積
+         }
+     }
+
+     /**
+      * @brief 累積和を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での累積和（ベクトルまたは行列）
+      * 
+      * MATLABの cumsum(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の累積和を返します。
+      */
+     Mat cumsum(int dim = -1) const {
+         if (dim == -1) { // 全要素の累積和
+             Eigen::VectorXd flat = data;
+             Eigen::VectorXd cumsum(flat.size());
+             double sum = 0.0;
+             for (int i = 0; i < flat.size(); ++i) {
+                 sum += flat(i);
+                 cumsum(i) = sum;
+             }
+             return Mat(cumsum);
+         } else if (dim == 0) { // 行方向の累積和（各列の累積和）
+             return Mat(data.colwise().cumsum());
+         } else if (dim == 1) { // 列方向の累積和（各行の累積和）
+             return Mat(data.rowwise().cumsum());
+         } else {
+             return cumsum(); // デフォルトは全要素の累積和
+         }
+     }
+
+     /**
+      * @brief 累積積を計算（次元指定対応）
+      * @param dim 次元（0で行方向、1で列方向、-1で全要素）
+      * @return 指定次元での累積積（ベクトルまたは行列）
+      * 
+      * MATLABの cumprod(A, dim) に相当します。
+      * dimが指定されていない場合は全要素の累積積を返します。
+      */
+     Mat cumprod(int dim = -1) const {
+         if (dim == -1) { // 全要素の累積積
+             Eigen::VectorXd flat = data;
+             Eigen::VectorXd cumprod(flat.size());
+             double prod = 1.0;
+             for (int i = 0; i < flat.size(); ++i) {
+                 prod *= flat(i);
+                 cumprod(i) = prod;
+             }
+             return Mat(cumprod);
+         } else if (dim == 0) { // 行方向の累積積（各列の累積積）
+             return Mat(data.colwise().cumprod());
+         } else if (dim == 1) { // 列方向の累積積（各行の累積積）
+             return Mat(data.rowwise().cumprod());
+         } else {
+             return cumprod(); // デフォルトは全要素の累積積
+         }
+     }
+
+     /**
       * @brief 2つのベクトルの内積（ドット積）を計算
       * @param b 内積を計算するベクトル
       * @return 内積の結果（スカラー）
@@ -624,4 +744,4 @@ public:
          // 条件を満たさない場合はゼロベクトルを返す
          return Mat::zeros(3, 1);
      }
- };
+};
