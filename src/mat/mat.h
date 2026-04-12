@@ -744,4 +744,301 @@ public:
          // 条件を満たさない場合はゼロベクトルを返す
          return Mat::zeros(3, 1);
      }
+
+     // === 追加のベクトル・行列関数 ===
+
+     /**
+      * @brief 行列の跡（trace）を計算
+      * @return 跡の値（対角要素の和）
+      * 
+      * MATLABの trace(A) に相当します。
+      * 正方形行列のみで動作します。
+      */
+     double trace() const {
+         if (rows() != cols()) {
+             throw std::invalid_argument("Trace can only be computed for square matrices");
+         }
+         return data.trace();
+     }
+
+     /**
+      * @brief ベクトルノルムを計算
+      * @param p ノルムの種類（1, 2, infinityなど）
+      * @return ノルムの値
+      * 
+      * MATLABの norm(A, p) に相当します。
+      * p = 1: 1-ノルム（絶対値の和）
+      * p = 2: 2-ノルム（ユークリッドノルム）
+      * p = infinity: 無限大ノルム（最大絶対値）
+      */
+     double norm(int p = 2) const {
+         if (numel() == 0) return 0.0;
+         
+         switch (p) {
+             case 1:
+                 return data.lpNorm<1>();
+             case 2:
+                 return data.norm();
+             case std::numeric_limits<int>::max():
+                 return data.lpNorm<Eigen::Infinity>();
+             default:
+                 throw std::invalid_argument("Unsupported norm type");
+         }
+     }
+
+     /**
+      * @brief 行列の形を変更
+      * @param newRows 新しい行数
+      * @param newCols 新しい列数
+      * @return 形状が変更された行列
+      * 
+      * MATLABの reshape(A, m, n) に相当します。
+      * 要素数が一致している必要があります。
+      */
+     Mat reshape(int newRows, int newCols) const {
+         if (newRows * newCols != numel()) {
+             throw std::invalid_argument("Reshape dimensions must match total number of elements");
+         }
+         return Mat(data.reshaped<Eigen::RowMajor>(newRows, newCols));
+     }
+
+     /**
+      * @brief 行列を上下反転
+      * @return 反転された行列
+      * 
+      * MATLABの flipud(A) に相当します。
+      */
+     Mat flipud() const {
+         return Mat(data.reverse());
+     }
+
+     /**
+      * @brief 行列を左右反転
+      * @return 反転された行列
+      * 
+      * MATLABの fliplr(A) に相当します。
+      */
+     Mat fliplr() const {
+         return Mat(data.rowwise().reverse());
+     }
+
+     /**
+      * @brief 行列を90度回転
+      * @param k 回転の回数（90度単位、正の値は時計回り）
+      * @return 回転された行列
+      * 
+      * MATLABの rot90(A, k) に相当します。
+      */
+     Mat rot90(int k = 1) const {
+         Mat result = *this;
+         for (int i = 0; i < (k % 4); ++i) {
+             result = result.transpose().fliplr();
+         }
+         return result;
+     }
+
+     /**
+      * @brief 行列を繰り返し生成
+      * @param m 行方向の繰り返し回数
+      * @param n 列方向の繰り返し回数
+      * @return 繰り返し生成された行列
+      * 
+      * MATLABの repmat(A, m, n) に相当します。
+      */
+     Mat repmat(int m, int n) const {
+         if (m <= 0 || n <= 0) return Mat();
+         
+         Mat result(rows() * m, cols() * n);
+         for (int i = 0; i < m; ++i) {
+             for (int j = 0; j < n; ++j) {
+                 result.block(i * rows(), j * cols(), rows(), cols()) = data;
+             }
+         }
+         return result;
+     }
+
+     /**
+      * @brief ブロック対角行列を生成
+      * @param matrices 対角に配置される行列のリスト
+      * @return ブロック対角行列
+      * 
+      * MATLABの blkdiag(A, B, C, ...) に相当します。
+      */
+     static Mat blkdiag(const std::vector<Mat>& matrices) {
+         if (matrices.empty()) return Mat();
+         
+         int totalRows = 0, totalCols = 0;
+         for (const auto& mat : matrices) {
+             totalRows += mat.rows();
+             totalCols += mat.cols();
+         }
+         
+         Mat result(totalRows, totalCols);
+         int currentRow = 0, currentCol = 0;
+         
+         for (const auto& mat : matrices) {
+             result.block(currentRow, currentCol, mat.rows(), mat.cols()) = mat.data;
+             currentRow += mat.rows();
+             currentCol += mat.cols();
+         }
+         
+         return result;
+     }
+
+     /**
+      * @brief 上三角行列を抽出
+      * @param k 対角線からのオフセット（0が主対角線）
+      * @return 上三角行列
+      * 
+      * MATLABの triu(A, k) に相当します。
+      */
+     Mat triu(int k = 0) const {
+         Mat result = *this;
+         for (int i = 0; i < rows(); ++i) {
+             for (int j = 0; j < cols(); ++j) {
+                 if (j < i + k) {
+                     result(i, j) = 0.0;
+                 }
+             }
+         }
+         return result;
+     }
+
+     /**
+      * @brief 下三角行列を抽出
+      * @param k 対角線からのオフセット（0が主対角線）
+      * @return 下三角行列
+      * 
+      * MATLABの tril(A, k) に相当します。
+      */
+     Mat tril(int k = 0) const {
+         Mat result = *this;
+         for (int i = 0; i < rows(); ++i) {
+             for (int j = 0; j < cols(); ++j) {
+                 if (j > i + k) {
+                     result(i, j) = 0.0;
+                 }
+             }
+         }
+         return result;
+     }
+
+     /**
+      * @brief 対角要素を抽出または生成
+      * @param k 対角線からのオフセット（0が主対角線）
+      * @return 対角要素からなるベクトル
+      * 
+      * MATLABの diag(A, k) に相当します。
+      */
+     Mat diag(int k = 0) const {
+         std::vector<double> diagonal;
+         if (k >= 0) {
+             int maxDiag = std::min(rows(), cols() - k);
+             for (int i = 0; i < maxDiag; ++i) {
+                 diagonal.push_back(data(i, i + k));
+             }
+         } else {
+             int maxDiag = std::min(rows() + k, cols());
+             for (int i = 0; i < maxDiag; ++i) {
+                 diagonal.push_back(data(i - k, i));
+             }
+         }
+         
+         Mat result(static_cast<int>(diagonal.size()), 1);
+         for (size_t i = 0; i < diagonal.size(); ++i) {
+             result(i, 0) = diagonal[i];
+         }
+         return result;
+     }
+
+     /**
+      * @brief 対角行列を生成
+      * @param v 対角要素となるベクトル
+      * @param k 対角線からのオフセット（0が主対角線）
+      * @return 対角行列
+      * 
+      * MATLABの diag(v, k) に相当します。
+      */
+     static Mat diag(const Mat& v, int k = 0) {
+         int size = v.rows() * v.cols();
+         int matSize = size + std::abs(k);
+         Mat result(matSize, matSize);
+         
+         int idx = 0;
+         if (k >= 0) {
+             for (int i = 0; i < size; ++i) {
+                 result(i, i + k) = v(idx++);
+             }
+         } else {
+             for (int i = 0; i < size; ++i) {
+                 result(i - k, i) = v(idx++);
+             }
+         }
+         
+         return result;
+     }
+
+     // === 論理インデックス関数 ===
+
+     /**
+      * @brief 論理インデックスで要素を検索
+      * @param condition 論理行列（true/false）
+      * @return 見つかった要素のインデックスのベクトル
+      * 
+      * MATLABの find(condition) に相当します。
+      */
+     static Mat find(const Mat& condition) {
+         std::vector<int> indices;
+         indices.reserve(condition.numel());
+         
+         for (int i = 0; i < condition.rows(); ++i) {
+             for (int j = 0; j < condition.cols(); ++j) {
+                 if (condition(i, j) != 0.0) { // 0でないものをtrueとみなす
+                     // 線形インデックスを計算
+                     indices.push_back(i * condition.cols() + j);
+                 }
+             }
+         }
+         
+         // インデックスを列ベクトルとして返す
+         Mat result(static_cast<int>(indices.size()), 1);
+         for (size_t k = 0; k < indices.size(); ++k) {
+             result(k, 0) = static_cast<double>(indices[k]);
+         }
+         
+         return result;
+     }
+
+     /**
+      * @brief 論理インデックスで要素を検索（行と列のペア）
+      * @param condition 論理行列（true/false）
+      * @return 見つかった要素の行インデックスと列インデックスのペア
+      * 
+      * MATLABの [row, col] = find(condition) に相当します。
+      */
+     static std::pair<Mat, Mat> find2d(const Mat& condition) {
+         std::vector<int> rowIndices, colIndices;
+         rowIndices.reserve(condition.numel());
+         colIndices.reserve(condition.numel());
+         
+         for (int i = 0; i < condition.rows(); ++i) {
+             for (int j = 0; j < condition.cols(); ++j) {
+                 if (condition(i, j) != 0.0) { // 0でないものをtrueとみなす
+                     rowIndices.push_back(i + 1); // MATLABは1ベース
+                     colIndices.push_back(j + 1); // MATLABは1ベース
+                 }
+             }
+         }
+         
+         // 行インデックスと列インデックスを返す
+         Mat rows(static_cast<int>(rowIndices.size()), 1);
+         Mat cols(static_cast<int>(colIndices.size()), 1);
+         
+         for (size_t k = 0; k < rowIndices.size(); ++k) {
+             rows(k, 0) = static_cast<double>(rowIndices[k]);
+             cols(k, 0) = static_cast<double>(colIndices[k]);
+         }
+         
+         return {rows, cols};
+     }
 };
