@@ -1,5 +1,4 @@
-#include <gtest/gtest.h>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 TEST(MatBasicOpsTest, Constructors) {
     // デフォルトコンストラクタ
@@ -19,7 +18,7 @@ TEST(MatBasicOpsTest, Constructors) {
     }
     
     // 初期化リストコンストラクタ
-    Mat m3 = {{1.0, 2.0}, {3.0, 4.0}};
+    Mat m3 = CreateTestMatrix2x2();
     EXPECT_EQ(m3.rows(), 2);
     EXPECT_EQ(m3.cols(), 2);
     EXPECT_DOUBLE_EQ(m3(0, 0), 1.0);
@@ -47,7 +46,7 @@ TEST(MatBasicOpsTest, ElementAccess) {
     // 線形インデックス
     EXPECT_DOUBLE_EQ(m(0), 10.0); // 0番目
     EXPECT_DOUBLE_EQ(m(1), 4.0);  // 1番目（列優先）
-    EXPECT_DOUBLE_EQ(m(2), 5.0);  // 2番目
+    EXPECT_DOUBLE_EQ(m(2), 2.0);  // 2番目
     EXPECT_DOUBLE_EQ(m(5), 6.0);  // 5番目
 }
 
@@ -148,17 +147,14 @@ TEST(MatBasicOpsTest, Transpose) {
     Mat m = {{1.0, 2.0, 3.0},
              {4.0, 5.0, 6.0}};
     Mat t = m.transpose();
-    EXPECT_EQ(t.rows(), 2);
-    EXPECT_EQ(t.cols(), 3);
+    EXPECT_EQ(t.rows(), 3);
+    EXPECT_EQ(t.cols(), 2);
     EXPECT_DOUBLE_EQ(t(0, 0), 1.0);
     EXPECT_DOUBLE_EQ(t(0, 1), 4.0);
-    EXPECT_DOUBLE_EQ(t(0, 2), 0.0); // 要素がないため0
     EXPECT_DOUBLE_EQ(t(1, 0), 2.0);
     EXPECT_DOUBLE_EQ(t(1, 1), 5.0);
-    EXPECT_DOUBLE_EQ(t(1, 2), 0.0);
     EXPECT_DOUBLE_EQ(t(2, 0), 3.0);
     EXPECT_DOUBLE_EQ(t(2, 1), 6.0);
-    EXPECT_DOUBLE_EQ(t(2, 2), 0.0);
 }
 
 TEST(MatBasicOpsTest, Slice) {

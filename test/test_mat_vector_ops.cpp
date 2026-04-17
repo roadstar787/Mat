@@ -1,5 +1,4 @@
-#include <gtest/gtest.h>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 TEST(MatVectorOpsTest, DotProduct) {
     // 内積のテスト

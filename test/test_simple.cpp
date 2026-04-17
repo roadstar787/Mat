@@ -2,7 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 // 簡易テストを実行する関数
 void run_simple_tests() {

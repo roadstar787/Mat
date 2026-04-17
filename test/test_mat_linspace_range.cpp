@@ -1,5 +1,4 @@
-#include <gtest/gtest.h>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 TEST(MatLinspaceRangeTest, LinspaceBasic) {
     // 基本的なlinspaceテスト
@@ -47,15 +46,16 @@ TEST(MatLinspaceRangeTest, RangeBasic) {
 
 TEST(MatLinspaceRangeTest, RangeNegativeStep) {
     // 負のステップ
-    Mat result = Mat::range(10.0, -2.0, 0.0); // 10, 8, 6, 4, 2
+    Mat result = Mat::range(10.0, -2.0, 0.0); // 10, 8, 6, 4, 2, 0
     EXPECT_EQ(result.rows(), 1);
-    EXPECT_EQ(result.cols(), 5);
+    EXPECT_EQ(result.cols(), 6);
     
     EXPECT_DOUBLE_EQ(result(0, 0), 10.0);
     EXPECT_DOUBLE_EQ(result(0, 1), 8.0);
     EXPECT_DOUBLE_EQ(result(0, 2), 6.0);
     EXPECT_DOUBLE_EQ(result(0, 3), 4.0);
     EXPECT_DOUBLE_EQ(result(0, 4), 2.0);
+    EXPECT_DOUBLE_EQ(result(0, 5), 0.0);
 }
 
 TEST(MatLinspaceRangeTest, RangeZeroStep) {

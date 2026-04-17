@@ -1,5 +1,4 @@
-#include <gtest/gtest.h>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 TEST(MatStatisticalTest, MeanBasic) {
     // 行ベクトルの平均

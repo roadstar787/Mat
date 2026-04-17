@@ -1,5 +1,4 @@
-#include <gtest/gtest.h>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 // 統計関数の拡張テスト
 TEST(MatStatisticalExtendedTest, MedianFunction) {

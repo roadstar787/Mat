@@ -1,16 +1,13 @@
-#include <gtest/gtest.h>
-#include "../src/mat/mat.h"
+#include "test_common.h"
 
 // 基本的なベクトル/行列関数のテスト
 TEST(MatAdvancedFunctionsTest, TraceFunction) {
-    Mat data = {{1.0, 2.0}, {3.0, 4.0}};
+    Mat data = CreateTestMatrix2x2();
     double trace = data.trace();
     EXPECT_DOUBLE_EQ(trace, 5.0); // 1 + 4
     
     // 3x3行列の跡
-    Mat data3 = {{1.0, 2.0, 3.0}, 
-                 {4.0, 5.0, 6.0}, 
-                 {7.0, 8.0, 9.0}};
+    Mat data3 = CreateTestMatrix3x3();
     double trace3 = data3.trace();
     EXPECT_DOUBLE_EQ(trace3, 15.0); // 1 + 5 + 9
 }
@@ -35,10 +32,10 @@ TEST(MatAdvancedFunctionsTest, ReshapeFunction) {
     EXPECT_EQ(reshaped.rows(), 3);
     EXPECT_EQ(reshaped.cols(), 2);
     EXPECT_DOUBLE_EQ(reshaped(0, 0), 1.0);
-    EXPECT_DOUBLE_EQ(reshaped(1, 0), 2.0);
-    EXPECT_DOUBLE_EQ(reshaped(2, 0), 3.0);
-    EXPECT_DOUBLE_EQ(reshaped(0, 1), 4.0);
-    EXPECT_DOUBLE_EQ(reshaped(1, 1), 5.0);
+    EXPECT_DOUBLE_EQ(reshaped(1, 0), 4.0);
+    EXPECT_DOUBLE_EQ(reshaped(2, 0), 2.0);
+    EXPECT_DOUBLE_EQ(reshaped(0, 1), 5.0);
+    EXPECT_DOUBLE_EQ(reshaped(1, 1), 3.0);
     EXPECT_DOUBLE_EQ(reshaped(2, 1), 6.0);
 }
 
