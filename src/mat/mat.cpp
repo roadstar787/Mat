@@ -92,9 +92,3 @@ double Mat::operator()(int r, int c) const { return data(r, c); }
  * 値の変更はできません。
  */
 double Mat::operator()(int i) const { return data(i); }
-
-// --- 代表的な関数 (Static) ---
-    
-/**
- * @brief ゼロ行列の生成
- * @param

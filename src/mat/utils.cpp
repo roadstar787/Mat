@@ -102,54 +102,5 @@ Mat Mat::find(const Mat& condition) {
     return result;
 }
 
-// 条件を満たす要素の行と列のインデックスを返す
-std::pair<Mat, Mat> Mat::find2d(const Mat& condition) {
-    std::vector<int> rowIndices, colIndices;
-    rowIndices.reserve(condition.numel());
-    colIndices.reserve(condition.numel());
-    for (int i = 0; i < condition.rows(); ++i) {
-        for (int j = 0; j < condition.cols(); ++j) {
-            if (condition(i, j) != 0.0) {
-                rowIndices.push_back(i + 1);
-                colIndices.push_back(j + 1);
-            }
-        }
-    }
-    Mat rows(static_cast<int>(rowIndices.size()), 1);
-    Mat cols(static_cast<int>(colIndices.size()), 1);
-    for (size_t k = 0; k < rowIndices.size(); ++k) {
-        rows(k, 0) = static_cast<double>(rowIndices[k]);
-        cols(k, 0) = static_cast<double>(colIndices[k]);
-    }
-    return {rows, cols};
-}
-
-// 要素へのアクセス
-// Element access operators
-double& Mat::operator()(int r, int c) {
-    return data(r, c);
-}
-
-// 要素へのアクセス（1次元インデックス）
-double& Mat::operator()(int i) {
-    return data(i);
-}
-
-// 要素へのアクセス（const版、1次元インデックス）
-double Mat::operator()(int i) const {
-    return data(i);
-}
-
-// スレッドインサート演算子（データに値を挿入）
-// Stream insertion operator
-template<typename T>
-Mat& Mat::operator<<(const T& value) {
-    data << value;
-    return *this;
-}
-
-// 明示的インスタンセーション（一般的な型用）
-// Explicit instantiation for common types if needed
-template Mat& Mat::operator<<(const int& value);
-template Mat& Mat::operator<<(const double& value);
-template Mat& Mat::operator<<(const float& value);
+// 要素へのアクセスは mat.cpp に実装済み
+// スレッドインサート演算子は mat.cpp に実装済み

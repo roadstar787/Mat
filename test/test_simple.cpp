@@ -1,8 +1,5 @@
 #include <iostream>
-#include <vector>
-#include <cmath>
-#include <algorithm>
-#include "test_common.h"
+#include "../src/mat/mat.h"
 
 // 簡易テストを実行する関数
 void run_simple_tests() {
@@ -57,7 +54,9 @@ void run_simple_tests() {
     std::cout << "非ゼロ要素の線形インデックス:" << std::endl;
     indices.disp();
     
-    auto [rows, cols] = Mat::find2d(condition);
+    std::pair<Mat, Mat> result = Mat::find2d(condition);
+    Mat rows = result.first;
+    Mat cols = result.second;
     std::cout << "非ゼロ要素の行・列インデックス:" << std::endl;
     std::cout << "行: "; rows.disp();
     std::cout << "列: "; cols.disp();
@@ -119,7 +118,7 @@ void run_simple_tests() {
 int main() {
     try {
         run_simple_tests();
-        std::cout << "\nすべてのテストが正常に完了しました！" << std::endl;
+        std::cout << "\nすべてのテストが正常に完了しました!" << std::endl;
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "エラーが発生しました: " << e.what() << std::endl;
